@@ -25,3 +25,13 @@ class HWIBridge:
             self.devices = _enumerate()
             self.last = t
         return self.devices
+
+    def get_client(self, fingerprint):
+        self.enumerate()
+        client = None
+        for dev in self.devices:
+            if dev["fingerprint"].lower() == fingerprint.lower():
+                if dev["type"] == "specter":
+                    return SpecterClient(dev["path"])
+                else:
+                    return get_client(dev["type"], dev["path"])

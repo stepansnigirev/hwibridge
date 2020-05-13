@@ -2,7 +2,7 @@
 <html>
 <head>
 	<link rel="shortcut icon" type="image/png" href="/static/img/icon.png"/>
-	<title>Specter Desktop</title>
+	<title>HWI bridge</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" type="text/css" href="/static/styles.css?{{rand}}">
 {% if debug %}
@@ -18,7 +18,7 @@ a{
 .cap{
 	text-transform: capitalize;
 }
-.btn.primary{
+.primary{
     background: var(--cmap-blue);
 }
 .btn.primary:hover{
@@ -31,6 +31,9 @@ input{
 </head>
 <body>
 <div class="row holder">
+	<div class="notification error" id="notificationmsg" style="display: none; margin-left: 125px">
+	    Error
+	</div>
 	{% include "includes/sidebar.html" %}
 	<main>
 		{% block main %}
@@ -53,6 +56,20 @@ function showLoader(){
 }
 function hideLoader(){
 	document.getElementById("loader").style.display = "none";
+}
+function showNotification(msg){
+	let el = document.getElementById("notificationmsg");
+	el.classList.remove("error");
+	el.classList.add("primary");
+	el.innerHTML = msg;
+	el.style.display = "block";
+}
+function showError(msg){
+	let el = document.getElementById("notificationmsg");
+	el.classList.add("error");
+	el.classList.remove("primary");
+	el.innerHTML = msg;
+	el.style.display = "block";
 }
 </script>
 </body>

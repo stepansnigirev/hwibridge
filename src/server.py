@@ -78,6 +78,22 @@ def add_header(response):
 def hwi_enumerate():
     return json.dumps(hwi.enumerate())
 
+@app.route("/hwi/sign", methods=["POST"])
+def hwi_sign():
+    data = json.loads(request.data)
+    fingerprint = data["fingerprint"].lower()
+    psbt = data["psbt"]
+    client = hwi.get_client(fingerprint)
+    psbt = PSBT()
+    psbt.deserialize(data["psbt"])
+    signed_psbt = PSBT()
+    signed_psbt.deserialize(client.sign_tx(psbt)['psbt'])
+    for i,inp in enumerate(signed_psbt.inputs):
+        for k in inp.partial_sigs:
+            psbt.inputs[i].partial_sigs[k] = inp.partial_sigs[k]
+    data["signed_psbt"] = psbt.serialize()
+    return json.dumps(data)
+
 @app.route('/')
 def index():
     return render_template('base.html', token=app.token, devices=hwi.devices)
