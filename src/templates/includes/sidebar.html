@@ -1,0 +1,43 @@
+<div id="side-content">
+{% raw %}
+<nav class="side" id="sidebar">
+    <a class="item" href="/tx/upload">
+    	<img src="/static/img/sign.svg"/>
+    	<div>
+        	Sign transaction<br>
+        	<small>paste, upload file or scan QR</small>
+    	</div>
+    </a>
+    <div class="separator">
+        Connected wallets
+    </div>
+    <a class="item" v-for="device in devices" v-bind:href="'/devices/'+device.fingerprint">
+            <img v-bind:src="'/static/img/'+device.type+'_icon.svg'" width="18px">
+        <div><span class="cap">{{device.type}}</span><br><small>{{device.fingerprint}}</small></div>
+    </a>
+    <div v-if="devices.length==0" class="item note" style="padding-left: 20px">Looks like there are no hardware wallets connected.</div>
+</nav>
+{% endraw %}
+</div>
+<script type="text/javascript">
+
+var sidebar = new Vue({
+  el: '#sidebar',
+  data: {
+    devices: {{devices | tojson}},
+  },
+  created: function(){
+    window.setInterval(this.update, 3000);
+    this.update()
+  },
+  methods:{
+  	update: function(){
+  		fetch('/hwi/enumerate')
+		.then(response => response.json())
+		.then((devices) => {
+			this.devices = devices;
+		});
+  	}
+  }
+});
+</script>

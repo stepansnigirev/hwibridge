@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block main %}
+<br><br>
+<h1>Import transaction</h1>
+<div class="note">
+	You can paste transaction in the text field, upload a file or scan a QR code
+</div>
+<br>
+<div class="card">
+	<form action="/tx/sign" method="POST">
+		<div class="note">
+			Paste PSBT transaction here
+		</div>
+		<textarea id="psbt" name="psbt" style="height: 170px"></textarea>
+		<div class="note">File can contain base64 or binary encoded transaction.
+		It will be converted to base64 automatically.</div>
+		<div class="row">
+			<input type="file" id="file" class="inputfile"/>
+			<label for="file" class="btn">Upload a file</label>
+		</div>
+		<div class="row padded">
+			<a class="btn">Scan QR code</a>
+		</div>
+		<div id="proceed" style="display:none" class="row padded">
+			<input type="submit" class="btn primary" value="Proceed to signing →">
+		</div>
+	</form>
+</div>
+<script type="text/javascript">
+var el = document.getElementById("file");
+var txt = document.getElementById("psbt");
+var proceed = document.getElementById("proceed");
+
+function checkProceed(){
+	if((txt.value.length > 5) && (txt.value.substr(0,4) == 'cHNi')){
+		proceed.style.display="block";
+	}else{
+		proceed.style.display="none";
+	}
+}
+
+el.addEventListener("change", (e) => {
+	let files = el.files;
+	if(files.length == 0){
+		return
+	}
+	let file = files[0];
+	let reader = new FileReader();
+	reader.onload = function(e) {
+		let str = reader.result;
+		if(str.substr(0, 4)=="cHNi"){
+			// parseTransaction(str);
+			console.log("base64", str);
+		}else if(str.substr(0, 4)=="psbt"){
+			str = btoa(str);
+			console.log("binary", str);
+		}else{
+			console.log("something is wrong");
+			return
+		}
+		txt.innerHTML = str;
+		checkProceed();
+	}
+	reader.readAsBinaryString(file);
+});
+txt.addEventListener("change", (e)=>{
+	checkProceed();
+});
+txt.addEventListener("keypress", (e)=>{
+	checkProceed();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block main %}
+<br><br>
+<h1>Sign transaction</h1>
+<div class="card" id="signingapp">
+	<div class="note center">Sign with one of connected devices</div>
+	{% raw %}
+	<div class="row" v-for="device in devices">
+	    <button class="btn" @click="sign(device)">
+	        <img v-bind:src="'/static/img/'+device.type+'_icon.svg'" width="18px">
+	        <div><span class="cap">{{device.type}}</span> — {{device.fingerprint}}</div>
+	    </button>
+	</div>
+    <div v-if="devices.length==0" class="item note" style="padding-left: 20px">Looks like there are no relevant hardware wallets connected.</div>
+	{% endraw %}
+</div>
+<div><br><br></div>
+<h2>Transaction details</h2>
+<br>
+<div class="row">
+	<table style="margin-right: 20px">
+		<thead><tr><th colspan="2">Inputs</th></tr></thead>
+		{% for inp in psbt.inputs %}
+		<tr><td class="tx scroll"><span>{{inp.address}}</span></td><td>{{inp.amount}}</td></tr>
+		{% endfor %}
+	</table>
+	<table>
+		<thead><tr><th colspan="2">Outputs</th></tr></thead>
+		{% for out in psbt.outputs %}
+		<tr><td><span>{{out.address}}</span></td><td>{{out.amount}}</td></tr>
+		{% endfor %}
+		<tr><td>Fee</td><td>{{psbt.fee}} sat</td></tr>
+	</table>
+</div>
+
+<script type="text/javascript">
+var signingapp = new Vue({
+  el: '#signingapp',
+  data: {
+    devices: [],
+    fingerprints: {{ psbt.fingerprints | tojson }},
+    psbt: "{{psbt.base64}}"
+  },
+  created: function(){
+    window.setInterval(this.update, 3000);
+    this.update()
+  },
+  methods:{
+  	update: function(){
+  		fetch('/hwi/enumerate')
+		.then(response => response.json())
+		.then((devices) => {
+			this.devices = devices.filter((dev) => {
+  				return signingapp.fingerprints.includes(dev.fingerprint);
+			});
+		});
+  	},
+  	sign: function(dev){
+  		let data = {
+  			fingerprint: dev.fingerprint,
+  			psbt: signingapp.psbt
+  		}
+  		fetch('/hwi/sign', {
+  			method: 'POST',
+  			headers: {
+    			'Content-Type': 'application/json',
+  			},
+  			body: JSON.stringify(data),
+  		})
+  		.then(response => response.json())
+		.then(data => {
+		  console.log('Success:', data);
+		})
+		.catch((error) => {
+		  console.error('Error:', error);
+		});
+  	}
+  }
+});
+</script>
+{% endblock %}

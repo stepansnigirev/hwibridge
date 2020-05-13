@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="shortcut icon" type="image/png" href="/static/img/icon.png"/>
+	<title>Specter Desktop</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="/static/styles.css?{{rand}}">
+{% if debug %}
+	<!-- Developer Version of vue.js because debug=true -->
+	<script src="/static/vue.js"></script>
+{% else %}  
+	<script src="/static/vue.min.js"></script>
+{% endif %}
+<style type="text/css">
+a{
+    cursor: pointer;
+}
+.cap{
+	text-transform: capitalize;
+}
+.btn.primary{
+    background: var(--cmap-blue);
+}
+.btn.primary:hover{
+    background: var(--cmap-blue-darker);
+}
+input{
+	font-weight: normal;
+}
+</style>
+</head>
+<body>
+<div class="row holder">
+	{% include "includes/sidebar.html" %}
+	<main>
+		{% block main %}
+		<div>
+			<br><br>Nothing here
+		</div>
+		{% endblock %}
+	</main>
+</div>
+<div class="loader" id="loader">
+	<img src="/static/img/loader.gif"/>
+	<h1>It may take a while...</h1>
+</div>
+<script type="text/javascript">
+function showLoader(){
+	console.log("Loading");
+	window.setTimeout(()=>{
+		document.getElementById("loader").style.display = "flex";
+	}, 1000);
+}
+function hideLoader(){
+	document.getElementById("loader").style.display = "none";
+}
+</script>
+</body>
+</html>
