@@ -30,7 +30,7 @@ if __name__ == '__main__':
     stream = StringIO()
     with redirect_stdout(stream):
         logger.debug('Starting server')
-        t = Thread(target=run_server)
+        t = Thread(target=run_server, args=(23947, False))
         t.daemon = True
         t.start()
         logger.debug('Checking server')
@@ -39,5 +39,5 @@ if __name__ == '__main__':
             sleep(0.3)
 
         logger.debug('Server started')
-        eel.init("static")
-        eel.start("bootstrap.html", block=True)
+        eel.init("static/eel")
+        eel.start("bootstrap.html", block=True, port=23947)

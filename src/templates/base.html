@@ -30,6 +30,9 @@ input{
 </style>
 </head>
 <body>
+{% if eel_port %}
+	<iframe style="width:0px;height:0px;border:0px solid transparent;" src="http://localhost:{{eel_port}}/dummy.html"></iframe>
+{% endif %}
 <div class="row holder">
 	<div class="notification error" id="notificationmsg" style="display: none; margin-left: 125px">
 	    Error

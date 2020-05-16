@@ -24,7 +24,7 @@
 var sidebar = new Vue({
   el: '#sidebar',
   data: {
-    devices: {{devices | tojson}},
+    devices: {{hwi.devices | tojson}},
   },
   created: function(){
     window.setInterval(this.update, 3000);
