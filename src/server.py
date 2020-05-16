@@ -1,7 +1,7 @@
 from flask import (Flask, url_for, render_template, jsonify, 
                    request, make_response, redirect)
 from hwibridge import get_psbt_meta
-from api import bridge, hwi
+from hwibridge.blueprint import bridge, hwi
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 1  # disable caching
