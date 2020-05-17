@@ -1,15 +1,71 @@
+"""
+HWI bridge server.
+
+Runs a flask server that creates a web interface for HWI
+and optionally gives access to hardware wallets from any website.
+Domains that can have access to HWI bridge API can be configured in the web interface.
+API is a simple JSON-RPC on top of HWIBridge class (see hwibridge/logic.py)
+"""
 from flask import (Flask, url_for, render_template, jsonify, 
-                   request, make_response, redirect)
-from hwibridge import get_psbt_meta
-from hwibridge.blueprint import bridge, hwi
+                   request, make_response, redirect, Response)
+from hwibridge import HWIBridge
+import json, traceback
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 1  # disable caching
+hwi = HWIBridge()
 
 @app.after_request
 def add_header(response):
     response.headers['Cache-Control'] = 'no-store'
     return response
+
+@app.route("/api", methods=["POST"])
+def api():
+    """JSON-RPC for ... anything. In this case - HWI Bridge"""
+    try:
+        data = json.loads(request.data)
+    except:
+        return jsonify({"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": None}), 500
+    # if it is not a list (not bundled)
+    if not isinstance(data, list):
+        dataarr = [data]
+    else:
+        dataarr = data
+    result = []
+    # go through every request in the list
+    for d in dataarr:
+        if "id" not in d:
+            d["id"] = None
+        obj = {"jsonrpc": "2.0", "id": d["id"]}
+        if "method" not in d:
+            obj["error"] = {"code": -32600, "message": "Invalid Request"}
+            result.append(obj)
+            continue
+        try:
+            method = getattr(hwi, d["method"])
+        except:
+            obj["error"] = {"code": -32601, "message": "Method not found"}
+            result.append(obj)
+            continue
+        try:
+            if "params" not in d:
+                obj["result"] = method()
+            elif isinstance(d["params"], list):
+                obj["result"] = method(*d["params"]) # list -> *args
+            else:
+                obj["result"] = method(**d["params"]) # dict -> **kwargs
+            result.append(obj)
+            continue
+        except Exception as e:
+            traceback.print_exc()
+            obj["error"] = {"code": -32000, "message": f"Internal error: {e}"}
+            result.append(obj)
+            continue
+    # if it was not a list (not bundled)
+    if dataarr != data:
+        result = result[0]
+    return jsonify(result)
 
 @app.route('/')
 def index():
@@ -21,14 +77,29 @@ def upload():
 
 @app.route('/tx/sign', methods=["POST"])
 def sign():
-    psbt = get_psbt_meta(request.form.get('psbt'))
+    # parse psbt and get back a dict with 
+    # inputs, outputs and device fingerprints
+    b64_psbt = request.form.get('psbt')
+    psbt = hwi.get_psbt_meta(b64_psbt)
+    psbt["base64"] = b64_psbt
     return render_template('sign.html', psbt=psbt, **app.kwargs)
 
 def run_server(eel_port=None, debug=True):
+    """
+    Runs an hwibridge server. 
+    If eel_port is provided - includes an iframe with eel, so
+    server shuts down when the window is closed.
+
+    Parameters:
+        eel_port (int): The port where eel is running. 
+                        None by default.
+        debug (bool):   Run server in debug mode (hot reload). 
+                        Default - True. 
+                        If eel_port is defined - always False.
+    """
     if eel_port:
         debug=False
     app.kwargs = {"eel_port": eel_port, "hwi": hwi}
-    app.register_blueprint(bridge, url_prefix='/hwi')
     app.run(host='127.0.0.1', port=23948, threaded=True, debug=debug)
 
 if __name__ == '__main__':

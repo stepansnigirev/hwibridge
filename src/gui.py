@@ -1,3 +1,9 @@
+"""
+Runs HWI bridge in GUI mode.
+
+It will start the server and spawn a Chrome window with the web interface.
+When you are done and close the window, server will shut down as well.
+"""
 import eel
 import logging
 import time

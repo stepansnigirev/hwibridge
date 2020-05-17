@@ -12,7 +12,7 @@
         Connected wallets
     </div>
     <a class="item" v-for="device in devices" v-bind:href="'/devices/'+device.fingerprint">
-            <img v-bind:src="'/static/img/'+device.type+'_icon.svg'" width="18px">
+        <img v-bind:src="'/static/img/'+device.type+'_icon.svg'" width="18px">
         <div><span class="cap">{{device.type}}</span><br><small>{{device.fingerprint}}</small></div>
     </a>
     <div v-if="devices.length==0" class="item note" style="padding-left: 20px">Looks like there are no hardware wallets connected.</div>
@@ -32,11 +32,26 @@ var sidebar = new Vue({
   },
   methods:{
   	update: function(){
-  		fetch('/hwi/enumerate')
-		.then(response => response.json())
-		.then((devices) => {
-			this.devices = devices;
-		});
+  		fetch("/api",{
+        method:"post",
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "jsonrpc": "2.0", 
+          "method": "enumerate", 
+          "id": 1
+        })
+      })
+      .then(response => response.json())
+		  .then((data) => {
+        if("error" in data){
+          showError(data.error.message);
+        }else{
+          this.devices = data.result;
+        }
+		  });
   	}
   }
 });

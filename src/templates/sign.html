@@ -53,12 +53,27 @@ var signingapp = new Vue({
   },
   methods:{
     update: function(){
-        fetch('/hwi/enumerate')
+        fetch("/api",{
+            method:"post",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "jsonrpc": "2.0", 
+                "method": "enumerate", 
+                "id": 1
+            })
+        })
         .then(response => response.json())
-        .then((devices) => {
-            this.devices = devices.filter((dev) => {
-                return signingapp.fingerprints.includes(dev.fingerprint);
-            });
+		.then((data) => {
+            if("error" in data){
+                showError(data.error.message);
+            }else{
+                this.devices = data.result.filter((dev) => {
+                    return signingapp.fingerprints.includes(dev.fingerprint);
+                });
+            }
         });
     },
     sign: function(dev){
@@ -67,27 +82,26 @@ var signingapp = new Vue({
             psbt: signingapp.psbt
         }
         showNotification("Confirm transaction on your device");
-        fetch('/hwi/sign', {
-            method: 'POST',
+        fetch("/api",{
+            method:"post",
             headers: {
-                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify({
+                "jsonrpc": "2.0", 
+                "method": "sign", 
+                "params": data,
+                "id": 1
+            })
         })
         .then(response => response.json())
-        .then(data => {
+		.then((data) => {
             if("error" in data){
-                console.error('Error:', data.error);
-                showError('Error signing transaction: '+data.error);
+                showError(data.error.message);
             }else{
-                console.log(data.signed_psbt);
-                signingapp.signedpsbt = data.signed_psbt;
-                showNotification("Transaction is signed!");
+                signingapp.signedpsbt = data.result;
             }
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            showError('Error signing transaction');
         });
     }
   }
