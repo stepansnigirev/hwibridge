@@ -20,7 +20,7 @@ def add_header(response):
     response.headers['Cache-Control'] = 'no-store'
     return response
 
-@app.route("/api", methods=["POST"])
+@app.route("/hwi", methods=["POST"])
 def api():
     """JSON-RPC for ... anything. In this case - HWI Bridge"""
     try:
@@ -100,7 +100,7 @@ def run_server(eel_port=None, debug=True):
     if eel_port:
         debug=False
     app.kwargs = {"eel_port": eel_port, "hwi": hwi}
-    app.run(host='127.0.0.1', port=23948, threaded=True, debug=debug)
+    app.run(host='127.0.0.1', port=25441, threaded=True, debug=debug)
 
 if __name__ == '__main__':
     run_server()

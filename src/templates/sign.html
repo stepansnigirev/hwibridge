@@ -53,7 +53,7 @@ var signingapp = new Vue({
   },
   methods:{
     update: function(){
-        fetch("/api",{
+        fetch("/hwi",{
             method:"post",
             headers: {
                 'Accept': 'application/json',
@@ -82,7 +82,7 @@ var signingapp = new Vue({
             psbt: signingapp.psbt
         }
         showNotification("Confirm transaction on your device");
-        fetch("/api",{
+        fetch("/hwi",{
             method:"post",
             headers: {
                 'Accept': 'application/json',

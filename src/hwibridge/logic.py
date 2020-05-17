@@ -128,8 +128,8 @@ class HWIBridge:
         tx.deserialize(psbt)
         signed_tx = PSBT()
         signed_tx.deserialize(client.sign_tx(tx)['psbt'])
-        # copy partial sigs from inputs to initial psbt
-        # because signed_psbt may drop certain fields (i.e. in Specter)
+        # copy partial sigs from inputs to initial tx
+        # because signed_tx may drop certain fields (i.e. in Specter)
         for i,inp in enumerate(signed_tx.inputs):
             for k in inp.partial_sigs:
                 tx.inputs[i].partial_sigs[k] = inp.partial_sigs[k]

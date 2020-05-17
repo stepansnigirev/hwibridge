@@ -36,14 +36,14 @@ if __name__ == '__main__':
     stream = StringIO()
     with redirect_stdout(stream):
         logger.debug('Starting server')
-        t = Thread(target=run_server, args=(23947, False))
+        t = Thread(target=run_server, args=(25440, False))
         t.daemon = True
         t.start()
         logger.debug('Checking server')
 
-        while not url_ok('127.0.0.1', 23948):
+        while not url_ok('127.0.0.1', 25441):
             sleep(0.3)
 
         logger.debug('Server started')
         eel.init("static/eel")
-        eel.start("bootstrap.html", block=True, port=23947)
+        eel.start("bootstrap.html", block=True, port=25440)
