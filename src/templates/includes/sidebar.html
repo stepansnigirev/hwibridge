@@ -1,58 +1,152 @@
 <div id="side-content">
-{% raw %}
 <nav class="side" id="sidebar">
-    <a class="item" href="/tx/upload">
-    	<img src="/static/img/sign.svg"/>
-    	<div>
-        	Sign transaction<br>
-        	<small>paste, upload file or scan QR</small>
-    	</div>
-    </a>
-    <div class="separator">
-        Connected wallets
+  <a class="item" href="/tx/upload">
+    <img src="/static/img/sign.svg"/>
+    <div>
+      Sign transaction<br>
+      <small>paste, upload file or scan QR</small>
     </div>
-    <a class="item" v-for="device in devices" v-bind:href="'/devices/'+device.fingerprint">
-        <img v-bind:src="'/static/img/'+device.type+'_icon.svg'" width="18px">
-        <div><span class="cap">{{device.type}}</span><br><small>{{device.fingerprint}}</small></div>
-    </a>
-    <div v-if="devices.length==0" class="item note" style="padding-left: 20px">Looks like there are no hardware wallets connected.</div>
+  </a>
+  <div class="separator">
+    Connected wallets
+  </div>
+  <div class="full-width column" id="sidebar-devices-list">
+    {% if hwi.devices | length > 0 %}
+    {% for device in hwi.devices %}
+    <sidebar-device device='{{device | tojson}}'></sidebar-device>
+    {% endfor %}
+    {% else %}
+    <div class="item note" style="padding-left: 20px">Looks like there are no hardware wallets connected.</div>
+    {% endif %}
+  </div>
 </nav>
-{% endraw %}
 </div>
-<script type="text/javascript">
 
-var sidebar = new Vue({
-  el: '#sidebar',
-  data: {
-    devices: {{hwi.devices | tojson}},
-  },
-  created: function(){
-    window.setInterval(this.update, 3000);
-    this.update()
-  },
-  methods:{
-  	update: function(){
-  		fetch("/hwi",{
-        method:"post",
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          "jsonrpc": "2.0", 
-          "method": "enumerate", 
-          "id": 1
-        })
-      })
-      .then(response => response.json())
-		  .then((data) => {
-        if("error" in data){
-          showError(data.error.message);
-        }else{
-          this.devices = data.result;
-        }
-		  });
-  	}
+<template id="sidebar-device">
+  <style>
+    .cap{
+      text-transform: capitalize;
+    }
+    .item{
+      padding: 10px 0;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      border-left: 3px solid transparent;
+      /*font-size: 0.85em;*/
+    }
+    a.item.active{
+      border-left: 3px solid #4A90E2;
+      background: rgba(0,0,0,0.1);
+      /*color: #fff;*/
+    }
+    a.item{
+      text-decoration: none;
+      color: inherit;
+    }
+    a.item:hover{
+      color: #F8FEFF;
+    }
+    .item > svg, .item > img{
+      opacity: 0.7;
+      margin: 0px 10px 0px 30px;
+    }
+    .item:hover > svg{
+      opacity: 1;
+    }
+  </style>
+  <a class="item" href="">
+    <img src="/static/img/hwi_icon.svg" width="18px">
+    <div><span class="cap">device.type</span><br><small>device.fingerprint</small></div>
+  </a>
+</template>
+
+<script type="text/javascript">
+class SidebarDevice extends HTMLElement {
+  constructor() {
+    super();
+    // Create a shadow root
+    var shadow = this.attachShadow({mode: 'open'});
+    var style = document.getElementById('sidebar-device').content;
+    var clone = style.cloneNode(true);
+
+    var device = JSON.parse(this.getAttribute('device'));
+
+    clone.querySelector("a").setAttribute('href',`/devices/${device.fingerprint}`);
+    clone.querySelector("img").setAttribute('src', `/static/img/${device.type}_icon.svg`);
+    clone.querySelector("span").innerHTML = device.type;
+    clone.querySelector("small").innerHTML = device.fingerprint;
+
+    // Attach the created element to the shadow dom
+    shadow.appendChild(clone);
   }
-});
+}
+customElements.define('sidebar-device', SidebarDevice);
+
+function updateSidebar(devices){
+  if(devices==null){
+    return;
+  }
+  let container = document.getElementById("sidebar-devices-list");
+
+  // check if devices is empty:
+  if(devices.length == 0){
+    container.innerText = `<div class="item note" style="padding-left: 20px">Looks like there are no hardware wallets connected.</div>`;
+  }else{
+    // check how many devices were in the list:
+    let list = container.querySelectorAll("sidebar-device");
+    // if it was empty we need to remove the warning
+    if(list.length == 0){
+      container.innerHTML = "";
+    }
+    // because javascript can't compare dicts...
+    let strings = devices.map((dev) => JSON.stringify(dev));
+    let already_present = [];
+    // now we keep only elements that are both in list and in devices
+    list.forEach( (el) => {
+      let dev = JSON.parse(el.getAttribute("device"));
+      // if device not present anymore
+      if(!strings.includes(JSON.stringify(dev))){
+        container.removeChild(el);
+      }else{
+        // otherwise remove it from strings - we already have it
+        already_present.push(JSON.stringify(dev));
+      }
+    });
+    let new_devices = strings.filter((el) => (!already_present.includes(el)));
+    new_devices.forEach((dev)=>{
+      container.innerHTML += `<sidebar-device device='${dev}'></sidebar-device>`;
+    });
+  }
+}
+
+async function updateDevices(){
+  let devices = [];
+  let data = await fetch("/hwi",{
+    method:"post",
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      "jsonrpc": "2.0", 
+      "method": "enumerate", 
+      "id": 1
+    })
+  })
+  .then(response => response.json());
+
+  if("error" in data){
+    showError(data.error.message);
+  }else{
+    devices = data.result;
+  }
+  return devices;
+}
+
+window.setInterval(function(){
+  updateDevices().then((devices)=>{
+    updateSidebar(devices);
+  });
+}, 2000);
 </script>

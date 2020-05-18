@@ -1,4 +1,4 @@
-import json, subprocess, time
+import json, subprocess, time, traceback
 from hwilib.serializations import PSBT
 from hwilib.commands import get_client, enumerate as hwi_enumerate
 from hwilib import bech32
@@ -21,13 +21,58 @@ def get_address(txout, testnet=False):
         addr = bech32.encode(hrp, ver, sc)
     return addr
 
-class HWIBridge:
+class JSONRPC:
+    """
+    Base JSON-RPC class. Add methods to self.exposed_rpc
+    to make it available with jsonrpc() call.
+    """
+    def __init__(self):
+        self.exposed_rpc = {}
+
+    def jsonrpc(self, request):
+        """Processes json-rpc request"""
+        # if it is a list (not bundled)
+        if isinstance(request, list):
+            responces = []
+            for req in request:
+                responces.append(self.jsonrpc(req))
+            return responces
+        # ok, not a list - just make it
+        if "id" not in request:
+            request["id"] = None
+        responce = {"jsonrpc": "2.0", "id": request["id"]}
+        if "method" not in request:
+            responce["error"] = {"code": -32600, "message": "Invalid Request"}
+            return responce
+        if request["method"] not in self.exposed_rpc:
+            responce["error"] = {"code": -32601, "message": "Method not found"}
+            return responce
+        method = self.exposed_rpc[request["method"]]
+        try:
+            if "params" not in request:
+                responce["result"] = method()
+            elif isinstance(request["params"], list):
+                responce["result"] = method(*request["params"]) # list -> *args
+            else:
+                responce["result"] = method(**request["params"]) # dict -> **kwargs
+        except Exception as e:
+            traceback.print_exc()
+            responce["error"] = {"code": -32000, "message": f"Internal error: {e}"}
+        return responce
+
+class HWIBridge(JSONRPC):
     """
     A class that represents HWI JSON-RPC methods.
 
     All methods of this class are callable over JSON-RPC, except _underscored.
     """
     def __init__(self):
+        # TODO: can we do it with a decorator?
+        self.exposed_rpc = {
+            "enumerate": self.enumerate,
+            "get_psbt_meta": self.get_psbt_meta,
+            "sign": self.sign,
+        }
         self.devices = []
         self.last = None
         self.enumerate()

@@ -27,49 +27,11 @@ def api():
         data = json.loads(request.data)
     except:
         return jsonify({"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": None}), 500
-    # if it is not a list (not bundled)
-    if not isinstance(data, list):
-        dataarr = [data]
-    else:
-        dataarr = data
-    result = []
-    # go through every request in the list
-    for d in dataarr:
-        if "id" not in d:
-            d["id"] = None
-        obj = {"jsonrpc": "2.0", "id": d["id"]}
-        if "method" not in d:
-            obj["error"] = {"code": -32600, "message": "Invalid Request"}
-            result.append(obj)
-            continue
-        try:
-            method = getattr(hwi, d["method"])
-        except:
-            obj["error"] = {"code": -32601, "message": "Method not found"}
-            result.append(obj)
-            continue
-        try:
-            if "params" not in d:
-                obj["result"] = method()
-            elif isinstance(d["params"], list):
-                obj["result"] = method(*d["params"]) # list -> *args
-            else:
-                obj["result"] = method(**d["params"]) # dict -> **kwargs
-            result.append(obj)
-            continue
-        except Exception as e:
-            traceback.print_exc()
-            obj["error"] = {"code": -32000, "message": f"Internal error: {e}"}
-            result.append(obj)
-            continue
-    # if it was not a list (not bundled)
-    if dataarr != data:
-        result = result[0]
-    return jsonify(result)
+    return jsonify(hwi.jsonrpc(data))
 
 @app.route('/')
 def index():
-    return render_template('base.html', **app.kwargs)
+    return redirect(url_for('upload'))
 
 @app.route('/tx/upload')
 def upload():
