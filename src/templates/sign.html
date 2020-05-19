@@ -2,6 +2,7 @@
 
 {% block main %}
 <br><br>
+{% include "components/qrcode.html" %}
 <h1>Sign transaction</h1>
 <div class="card" id="signingapp">
     <div class="note center">Sign with one of connected devices</div>
@@ -12,12 +13,14 @@
             <div><span class="cap">{{device.type}}</span> — {{device.fingerprint}}</div>
         </button>
     </div>
-    <div v-if="devices.length==0" class="item note" style="padding-left: 20px">Looks like there are no relevant hardware wallets connected.</div>
+    <div v-if="devices.length==0" class="item note center" style="padding-left: 20px">Looks like there are no relevant hardware wallets connected.</div>
     {% endraw %}
     <div><br><br></div>
-    <div class="row" v-if="signedpsbt!=psbt">
+    <div class="column" v-if="signedpsbt!=psbt">
         <a class="btn primary" download="signed.psbt.txt" v-bind:href="'data:application/octet-stream,'+signedpsbt">Download transaction</a>
+        <div class="note center">Scan QR code with signed transaction</div>
     </div>
+        <qr-code v-bind:value="signedpsbt" style="margin-top:20px;" width="400"></qr-code>
 </div>
 <div><br><br></div>
 <h2>Transaction details</h2>
@@ -100,6 +103,7 @@ var signingapp = new Vue({
             if("error" in data){
                 showError(data.error.message);
             }else{
+                showNotification("Transaction is signed!");
                 signingapp.signedpsbt = data.result;
             }
         });

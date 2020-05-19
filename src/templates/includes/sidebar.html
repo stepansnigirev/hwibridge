@@ -91,7 +91,7 @@ function updateSidebar(devices){
 
   // check if devices is empty:
   if(devices.length == 0){
-    container.innerText = `<div class="item note" style="padding-left: 20px">Looks like there are no hardware wallets connected.</div>`;
+    container.innerHTML = `<div class="item note" style="padding-left: 20px">Looks like there are no hardware wallets connected.</div>`;
   }else{
     // check how many devices were in the list:
     let list = container.querySelectorAll("sidebar-device");
